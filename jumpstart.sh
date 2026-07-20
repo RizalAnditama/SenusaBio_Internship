@@ -21,6 +21,7 @@ conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 # 5. Create Magpie Environment 
 echo -e "a
 a" | conda env create -f magpie.yml
+conda run -n magpie pip install -r requirements.txt
 
 # 6. Create SpliceAI Environment
 conda env create -f spliceai.yml
