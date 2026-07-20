@@ -80,11 +80,11 @@ def train(train_file):
     data_prep.to_csv(temp_file, index=False)
     
     imputed_file = impute_file(temp_file)
-    data_bpca = pd.read_csv(imputed_file, low_memory=False)
+    data_iterative_imputer = pd.read_csv(imputed_file, low_memory=False)
     
     for col in feature_list_new:
-        if col in data_bpca.columns:
-            data_prep[col] = data_bpca[col]
+        if col in data_iterative_imputer.columns:
+            data_prep[col] = data_iterative_imputer[col]
         else:
             data_prep[col] = 0.0
             

@@ -12,3 +12,4 @@ data/result/MAGPIE_denovo_multiclass.model
 data/result/orthogonal.csv
 data/result/test.csv
 data/temp
+openfe_tmp_data.feather

@@ -37,11 +37,11 @@ def predict(test_file, autoFE_features, selection, model_file, filename, file_st
     test.to_csv(temp_file, index=False)
     
     imputed_file = impute_file(temp_file)
-    data_bpca = pd.read_csv(imputed_file, low_memory=False)
+    data_iterative_imputer = pd.read_csv(imputed_file, low_memory=False)
     
     for col in feature_list:
-        if col in data_bpca.columns:
-            test[col] = data_bpca[col]
+        if col in data_iterative_imputer.columns:
+            test[col] = data_iterative_imputer[col]
         else:
             test[col] = 0.0
 

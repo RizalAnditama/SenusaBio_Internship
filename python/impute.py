@@ -52,7 +52,7 @@ def impute_file(input_file: str) -> str:
         filled_df[col] = filled_df[col].astype(int)
 
     filename = os.path.splitext(os.path.basename(input_file))[0]
-    output_file = os.path.join(TEMP_DIR, f"{filename}_bpca.csv")
+    output_file = os.path.join(TEMP_DIR, f"{filename}_iterative_imputer.csv")
     
     filled_df.to_csv(output_file, index=False, header=True)
     return output_file
