@@ -1,4 +1,4 @@
-## MAGPIE Framework (Multiclass Edition)
+## SenusaBio (MAGPIE Multiclass Edition)
 Sebuah sistem klasifikasi varian genetik berbasis LightGBM dengan integrasi OpenFE dan imputasi data IterativeImputer. Versi ini telah dioptimalkan untuk berjalan secara efisien pada lingkungan memori terbatas dan mendukung klasifikasi multikelas (Benign, VUS, Pathogenic).
 
 ### Basic Requirements 
