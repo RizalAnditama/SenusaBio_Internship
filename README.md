@@ -13,6 +13,12 @@ Sistem MAGPIE membaca data input varian dalam format CSV. Pastikan lima kolom aw
 
 |  Chr  | Start |  End  |  Ref  |  Alt  |  ...  |
 | ----- | ----- | ----- | ----- | ----- | ----- |
+* Chr: identitas kromosom lokasi varian genetik.
+* Start: koordinat awal mutasi genetik.
+* End: koordinat akhir mutasi genetik.
+* Ref: basa nukleotida asli dari genom referensi.
+* Alt: basa nukleotida mutasi pada sampel.
+* CLASS: kelas (opsional). -1 untuk Benign, 0 untuk Variant of Uncertain Significance, 1 untuk Pathogenic. 
 
 #### Use Pretrained Model to Predict Variants
 Sistem membaca dan mengeksekusi model yang telah Anda latih menggunakan data set multikelas sebelumnya.
