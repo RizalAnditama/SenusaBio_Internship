@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+data/datasets/denovo_multiclass.csv
+data/datasets/train_denovo.csv
+data/output/spliceai/denovo_out.vcf
+data/output/annovar
+data/output/visualization
+data/result/acmg_guided.csv
+data/result/denovo.csv
+data/result/MAGPIE_denovo.model
+data/result/MAGPIE_denovo_multiclass.model
+data/result/orthogonal.csv
+data/result/test.csv
+data/temp
