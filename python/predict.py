@@ -6,11 +6,10 @@ from openfe import transform
 from impute import impute_file
 from data_process import prepare_training_data
 
-target_dir = '/kaggle/working/data/output/visualization'
+root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+target_dir = os.path.join(root, 'data/output/visualization')
 os.makedirs(target_dir, exist_ok=True)
 print('Direktori visualisasi siap')
-
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def predict(test_file, autoFE_features, selection, model_file, filename, file_state):
     feature_list = [
@@ -63,11 +62,17 @@ def predict(test_file, autoFE_features, selection, model_file, filename, file_st
 
     print('Memulai perhitungan probabilitas')
     model = joblib.load(model_file)
-    test_pred_prob = model.predict(X_matrix)
+    if isinstance(model, list):
+        test_pred_prob = np.mean([m.predict(X_matrix) for m in model], axis=0)
+    else:
+        test_pred_prob = model.predict(X_matrix)
     
-    test_pred_label = np.argmax(test_pred_prob, axis=1)
+    test_pred_label_mapped = np.argmax(test_pred_prob, axis=1)
+    # Map label back: 0 -> -1 (Benign), 1 -> 0 (VUS), 2 -> 1 (Pathogenic)
+    inv_label_map = {0: -1, 1: 0, 2: 1}
+    test_pred_label = [inv_label_map[label] for label in test_pred_label_mapped]
     
-    result_df = pd.concat([test.reset_index(drop=True), pd.DataFrame(test_pred_label, columns=['MAGPIE_pred'])], axis=1)
+    result_df = pd.concat([test.reset_index(drop=True), pd.DataFrame(test_pred_label, columns=['SenusaBio_pred'])], axis=1)
     result_df.to_csv(os.path.join(root, f'data/result/{filename}.csv'), index=False)
     
     return result_df

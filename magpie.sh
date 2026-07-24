@@ -75,7 +75,7 @@ annotate_file() {
   fi
 
   if [ ! -f "${TEMP_DIR}${FILE_NAME}_iterative_imputer.csv" ]; then
-    echo "Menggabungkan fitur dan imputasi Iterative Imputer"
+    echo "Menggabungkan fitur dan imputasi "
     python python/magpie.py --mode merge --input_file "${ANNOVAR_DATA_DIR}${FILE_NAME}.hg38_multianno.csv" --spliceai_out "${SPLICEAI_DATA_DIR}/${FILE_NAME}_out.vcf"
     python python/impute.py --input_file "${TEMP_DIR}${FILE_NAME}.csv"
   else

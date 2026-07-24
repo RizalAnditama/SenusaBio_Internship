@@ -7,7 +7,7 @@ import seaborn as sns
 from plotnine import *
 import matplotlib as mpl
 from pandas.api.types import CategoricalDtype
-from sklearn.metrics import roc_curve, auc, roc_auc_score
+from sklearn.metrics import roc_curve, auc, roc_auc_score, confusion_matrix, classification_report
 from sklearn import metrics
 from utils import get_prior, cal_pr_values, cal_metrics_visualization
 
@@ -21,10 +21,10 @@ legend_font = 18
 
 model_name_list = ['ClinPred', 'REVEL', 'VARITY', 'MetaSVM', 'MetaLR',
                    'VEST4', 'M-CAP', 'MutPred', 'PrimateAI', 'MutationAssessor',
-                   'LIST-S2', 'SIFT4G', 'DANN', 'MutationTaster', 'MAGPIE']
+                   'LIST-S2', 'SIFT4G', 'DANN', 'MutationTaster', 'SenusaBio']
 model_list = ['ClinPred_score', 'REVEL_score', 'VARITY_R', 'MetaSVM_score', 'MetaLR_score',
               'VEST4_score', 'M-CAP_score', 'MutPred_score', 'PrimateAI_score', 'MutationAssessor_score',
-              'LIST-S2_score', 'SIFT4G_score', 'DANN_rankscore', 'MutationTaster_score', 'MAGPIE_pred']
+              'LIST-S2_score', 'SIFT4G_score', 'DANN_rankscore', 'MutationTaster_score', 'SenusaBio_pred']
 compare_list = ['func', 'CLASS'] + model_list
 threshold_list = [0.5, 0.5, 0.5, 0.5, 0.5,
                   0.5, 0.025, 0.79, 0.8, 0.8,
@@ -38,18 +38,6 @@ cutoff = None
 version = 'old'
 
 def multi_models_roc(names, colors, data, save=None, dpin=500):
-    """
-    将多个机器模型的roc图输出到一张图上
-
-    Args:
-        names: list, 多个模型的名称
-        colors: list, 多个模型的颜色
-        data: DataFrame, 用于画图的数据
-        save: 选择是否将结果保存（默认为png格式）, 如果有值就作为文件名
-
-    Returns:
-        返回图片对象plt
-    """
     plt.figure(figsize=(10, 10), dpi=dpin)
     plot_list = []
     label_list = []
@@ -67,12 +55,12 @@ def multi_models_roc(names, colors, data, save=None, dpin=500):
     for (name, colorname) in zip(names, colors):
         df = data.loc[:, [name, 'CLASS']].dropna().astype('float64')
         fpr, tpr, thresholds = roc_curve(df.CLASS, df[name].to_list(), pos_label=1)
-        
+
         try:
             score = roc_auc_score(df.CLASS, df[name].to_list(), average='macro', multi_class='ovr')
         except ValueError:
             score = auc(fpr, tpr)
-            
+
         label = '{} ({:.3f})'.format('_'.join(name.split('_')[:-1]), score)
         order_dict[score] = order_index
         order_index += 1
@@ -93,7 +81,8 @@ def multi_models_roc(names, colors, data, save=None, dpin=500):
                loc='lower right', fontsize=legend_font)
 
     if save is not None:
-        plt.savefig(save, dpi=500, bbox_inches='tight', format='pdf')
+        fmt = os.path.splitext(save)[1][1:]
+        plt.savefig(save, dpi=500, bbox_inches='tight', format=fmt)
 
     return plt
 
@@ -151,7 +140,7 @@ def multi_models_pr(names, colors, data, mode, save=None, dpin=500, loc='upper l
         plt.yticks([0.2, 0.4, 0.6, 0.8, 1.0], fontsize=tick_font)
         plt.xlabel('Precision', fontsize=label_font)
         plt.ylabel('Recall', fontsize=label_font)
-    
+
     order_list = pd.DataFrame.from_dict({'AUC': order_dict.keys(), 'order': order_dict.values()}).sort_values(
         by='AUC', ascending=False).order.tolist()
     plt.legend(handles=[plot_list[idx] for idx in order_list],
@@ -159,7 +148,8 @@ def multi_models_pr(names, colors, data, mode, save=None, dpin=500, loc='upper l
                loc=loc, fontsize=legend_font)
 
     if save is not None:
-        plt.savefig(save, dpi=500, bbox_inches='tight', format='pdf')
+        fmt = os.path.splitext(save)[1][1:]
+        plt.savefig(save, dpi=500, bbox_inches='tight', format=fmt)
 
     return plt
 
@@ -203,13 +193,16 @@ def get_metrics_plot(df, type_name, name_color_dict, save=None, metric_list=None
         subplot_index += 1
         plt.xlabel(None)
     if save:
-        plt.savefig(save, dpi=500, bbox_inches='tight', format='pdf')
+        fmt = os.path.splitext(save)[1][1:]
+        plt.savefig(save, dpi=500, bbox_inches='tight', format=fmt)
 
 
 def visualize(test, filename):
     print('---' + time.asctime(time.localtime(time.time())) + '--- visualizing result.\n')
     for col in model_list:
-        test[col] = test[col].astype('float64').tolist()
+        if col in test.columns:
+            test[col] = test[col].astype('float64').tolist()
+            
     name_color_dict = {}
     for name, color in zip(model_name_list, colors):
         name_color_dict[name] = color
@@ -223,15 +216,21 @@ def visualize(test, filename):
     for name, threshold in zip(model_name_list, threshold_list):
         name_threshold_dict[name] = threshold
 
+    # Save both PDF and SVG for PRC
     multi_models_pr(model_list, [name_color_dict[i] for i in model_name_list], test,
                     save=f'{save_dir}{filename}_PRC.pdf', mode='prc', loc='lower left')
+    multi_models_pr(model_list, [name_color_dict[i] for i in model_name_list], test,
+                    save=f'{save_dir}{filename}_PRC.svg', mode='prc', loc='lower left')
 
+    # Save both PDF and SVG for AUC
     df_test_roc = test.copy()
     df_test_roc.SIFT4G_score = [1 - i if str(i) != 'nan' else np.nan for i in df_test_roc.SIFT4G_score]
+    multi_models_roc(model_list, [name_color_dict[i] for i in model_name_list],
+                     df_test_roc, save=f'{save_dir}{filename}_AUC.pdf')
+    multi_models_roc(model_list, [name_color_dict[i] for i in model_name_list],
+                     df_test_roc, save=f'{save_dir}{filename}_AUC.svg')
 
-    train_roc_graph = multi_models_roc(model_list, [name_color_dict[i] for i in model_name_list],
-                                       df_test_roc, save=f'{save_dir}{filename}_AUC.pdf')
-
+    # Save both PDF and SVG for performance metrics plot
     if cutoff:
         df_metrics_test = test[(test.AF <= cutoff)][model_list + ['CLASS']]
     else:
@@ -244,4 +243,48 @@ def visualize(test, filename):
                      metric_list=['Missing rate', 'MCC', 'Accuracy', 'Precision', 'Recall', 'F1-score', 'F_beta-score',
                                   'G-mean', 'AUPRC', 'AUBPRC'],
                      save=f'{save_dir}{filename}_performance.pdf')
-    print('---' + time.asctime(time.localtime(time.time())) + f'--- MAGPIE prediction finished. Results are in {save_dir} folder.\n')
+    get_metrics_plot(df_performance_test, filename, name_color_dict=name_color_dict,
+                     metric_list=['Missing rate', 'MCC', 'Accuracy', 'Precision', 'Recall', 'F1-score', 'F_beta-score',
+                                  'G-mean', 'AUPRC', 'AUBPRC'],
+                     save=f'{save_dir}{filename}_performance.svg')
+                     
+    # Generate Confusion Matrix and Classification Report specifically for SenusaBio
+    if 'SenusaBio_pred' in test.columns and 'CLASS' in test.columns:
+        eval_df = test[['CLASS', 'SenusaBio_pred']].dropna()
+        if not eval_df.empty:
+            y_true = eval_df['CLASS'].astype(int).values
+            y_pred = eval_df['SenusaBio_pred'].astype(int).values
+            
+            unique_labels = sorted(list(set(y_true) | set(y_pred)))
+            label_names = { -1: 'Benign', 0: 'VUS', 1: 'Pathogenic' }
+            class_names_eval = [label_names[l] for l in unique_labels if l in label_names]
+            
+            # Confusion Matrix
+            cm = confusion_matrix(y_true, y_pred, labels=unique_labels)
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names_eval, yticklabels=class_names_eval)
+            plt.title('Confusion Matrix (SenusaBio)')
+            plt.ylabel('True label')
+            plt.xlabel('Predicted label')
+            plt.tight_layout()
+            plt.savefig(f'{save_dir}{filename}_confusion_matrix.pdf', format='pdf', dpi=300)
+            plt.savefig(f'{save_dir}{filename}_confusion_matrix.svg', format='svg', dpi=300)
+            plt.close()
+            
+            # Classification Report
+            report_dict = classification_report(y_true, y_pred, labels=unique_labels, target_names=class_names_eval, output_dict=True)
+            report_df = pd.DataFrame(report_dict).transpose().round(3)
+            
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.axis('off')
+            table = ax.table(cellText=report_df.values, colLabels=report_df.columns, rowLabels=report_df.index, loc='center', cellLoc='center')
+            table.auto_set_font_size(False)
+            table.set_fontsize(12)
+            table.scale(1.2, 1.5)
+            plt.title('Classification Report (SenusaBio)', fontsize=16, y=0.9)
+            plt.tight_layout()
+            plt.savefig(f'{save_dir}{filename}_classification_report.pdf', format='pdf', dpi=300)
+            plt.savefig(f'{save_dir}{filename}_classification_report.svg', format='svg', dpi=300)
+            plt.close()
+            
+    print('---' + time.asctime(time.localtime(time.time())) + f'--- SenusaBio prediction finished. Results are in {save_dir} folder.\n')
