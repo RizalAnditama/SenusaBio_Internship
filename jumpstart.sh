@@ -1,8 +1,6 @@
 
 #!/bin/bash
 
-cd /kaggle/working/ || exit
-
 wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
 # 2. Install Miniconda with automated responses
